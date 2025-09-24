@@ -33,7 +33,7 @@ st.markdown(
 @st.cache_data
 def load_dataset(path=None):
     if path is None:
-        path = "/simulated_iot_attacks_dataset.csv"
+        path = "simulated_iot_attacks_dataset.csv"
     df = pd.read_csv(path, parse_dates=["timestamp", "timestamp_reported"])
     return df
 
@@ -325,10 +325,10 @@ slice_df = dev_df.iloc[start_idx:end_idx+1]
 # plot temp and reported vs true
 fig, ax = plt.subplots(2,1, figsize=(12,5), sharex=True)
 ax[0].plot(slice_df["timestamp"], slice_df["temp_true"], label="temp_true", linewidth=1)
-ax[0].plot(slice_df["timestamp"], slice_df["temp_reported"], label="temp_reported", linewidth=1, alpha=0.8)
+ax[0].plot(slice_df["timestamp"], slice_df["temp_reported"], label="temp_reported", linewidth=1, linestyle="--")
 ax[0].legend(); ax[0].set_ylabel("Temp (°C)")
-ax[1].plot(slice_df["timestamp"], slice_df["distance_from_route_true"], label="dist_true", linewidth=1)
-ax[1].plot(slice_df["timestamp"], slice_df["distance_from_route_reported"], label="dist_reported", linewidth=1, alpha=0.8)
+ax[1].plot(slice_df["timestamp"], slice_df["distance_from_route_true"], label="dist_true", linewidth=1,)
+ax[1].plot(slice_df["timestamp"], slice_df["distance_from_route_reported"], label="dist_reported", linewidth=1, linestyle="--")
 ax[1].legend(); ax[1].set_ylabel("Distance (m)")
 st.pyplot(fig)
 
