@@ -199,7 +199,7 @@ if run_train:
         # Logistic Regression baseline
         rf_clf = train_risk_fusion(X_train_fusion, y_train)
         rf_probs = rf_clf.predict_proba(X_test_fusion)[:,1]
-        rf_preds = (rf_probs >= 0.5).astype(int)
+        rf_preds = (rf_probs >= 0.7).astype(int)
 
         # Evaluation
         iso_report, iso_roc = eval_classification(y_test, iso_pred_bin, None)
@@ -269,7 +269,7 @@ if "iso_model" in st.session_state and "rf_model" in st.session_state:
 
     X_live_fusion = scaler_fusion.transform(row[fusion_features].fillna(0).values.reshape(1,-1))
     rf_prob = rf_clf.predict_proba(X_live_fusion)[:,1][0]
-    rf_pred = int(rf_prob >= 0.5)
+    rf_pred = int(rf_prob >= 0.7)
 
     st.markdown("**Live model outputs for selected sample**")
     st.write(f"IsolationForest anomaly (0/1): {iso_bin}")
@@ -302,7 +302,7 @@ if "test_df" in st.session_state:
         scaler_f = st.session_state["rf_scaler"]
         X_all_f = scaler_f.transform(df[fusion_features].fillna(0))
         df["RF_prob"] = rf.predict_proba(X_all_f)[:,1]
-        df["RF_pred"] = (df["RF_prob"] >= 0.5).astype(int)
+        df["RF_pred"] = (df["RF_prob"] >= 0.7).astype(int)
 
     # Download CSV of predictions
     st.subheader("Download predicted labels")

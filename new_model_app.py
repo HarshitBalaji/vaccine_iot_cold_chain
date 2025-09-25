@@ -99,7 +99,7 @@ def ensure_labels(df):
 # ----------------------
 # Metrics & utilities
 # ----------------------
-def binary_metrics(y_true, y_score, threshold=0.5):
+def binary_metrics(y_true, y_score, threshold=0.7):
     y_true = np.asarray(y_true).astype(int)
     y_score = np.asarray(y_score).astype(float)
     y_pred = (y_score >= threshold).astype(int)
