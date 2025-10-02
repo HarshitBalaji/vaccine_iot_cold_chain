@@ -1,0 +1,14 @@
+More research on anomalies - Literature analysis of anomalies in IoT networks with those particular devices and this scenario
+
+Define Anomaly and what is normal and deviation
+
+Mathematical model of the algorithms used - the model and ML results match. Need to fit ML model incase they don't match.
+
+
+CVSS Scoring - NIST 800 
+
+
+Ensure the following:
+1. The baselines are Isolation Forest and Risk Fusion models
+2. The Proposed system is a multilayer anomaly detection system that detects both operational and cybersecurity anomalies. Operational anomalies include Temperature, Humidity, Geofence, Tamper and Cyber (cyber anomaly).
+

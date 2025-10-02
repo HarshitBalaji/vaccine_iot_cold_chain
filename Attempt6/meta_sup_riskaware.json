@@ -1,0 +1,43 @@
+{
+  "persistence": {
+    "temp": 4,
+    "geo": 4,
+    "tamper": 1,
+    "attack": 2
+  },
+  "thresholds": {
+    "temp": 0.34829059829059833,
+    "geo": 0.7367276926872278,
+    "tamper": 1.0,
+    "attack_sup_base": 0.44645437053393533
+  },
+  "features": {
+    "attack_feats": [
+      "reported_ts_diff_min",
+      "rpt_gap_min",
+      "rcv_gap_min",
+      "gap_err_min",
+      "rpt_gap_cv_5",
+      "rcv_gap_cv_5",
+      "delay_min",
+      "delay_z",
+      "delay_big",
+      "gps_repeat_count",
+      "gps_repeat_cap10",
+      "dup_ratio_5",
+      "dup_ratio_10",
+      "temp_var_5",
+      "hum_var_5",
+      "zcr_temp_5",
+      "zcr_hum_5",
+      "temp_resid_std_ratio",
+      "hum_resid_std_ratio",
+      "rpt_ooo",
+      "speed_mean_5",
+      "speed_std_5",
+      "accel_std_5",
+      "teleport_flag"
+    ]
+  },
+  "notes": "SUP-only cyber, risk-aware thresholding, kinematics & replay features, posture update to Excel."
+}
