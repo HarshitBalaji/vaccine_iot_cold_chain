@@ -52,7 +52,7 @@ The Streamlit interface enables interactive visualization of anomaly scores, ale
 ### Baseline Models Dashboard
 The Streamlit interface for baseline anomaly detection methods.
 
-![Baseline Dashboard](screenshots/baseline_dashboard.png)
+![Baseline Dashboard](screenshots/baselines_dashboard.png)
 
 ### Proposed Unified Model
 Interactive visualization of operational and cyber anomalies with risk-aware alerting.
