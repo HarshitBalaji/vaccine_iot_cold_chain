@@ -74,8 +74,8 @@ uploaded_train = st.sidebar.file_uploader("Upload train CSV", type="csv")
 uploaded_test  = st.sidebar.file_uploader("Upload test CSV",  type="csv")
 vapt_file      = st.sidebar.file_uploader("Upload VAPT CSV (Device_ID,vuln_id,cvss,epss)", type="csv")
 
-DEFAULT_TRAIN = "synthetic_train.csv"
-DEFAULT_TEST  = "synthetic_test.csv"
+DEFAULT_TRAIN = "synthetic_train_better_journey_dev_overlap_delay.csv"
+DEFAULT_TEST  = "synthetic_test_better_journey_overlap_delay.csv"
 
 if use_defaults:
     train_df = load_csv(DEFAULT_TRAIN)

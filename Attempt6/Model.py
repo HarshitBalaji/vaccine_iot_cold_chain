@@ -395,14 +395,45 @@ def main():
     test_eval["score_attack_sup"] = sup_attack_clf.predict_proba(X_test_attack)[:,1]
 
     # Risk-aware thresholding + dynamic persistence
-    thr_base = thr["attack_sup_base"]
-    epss_w, cvss_w, dvd_w = 0.35, 0.15, 0.15
-    risk_term = (
-        epss_w * test_eval.get("epss",0.0).fillna(0.0) +
-        cvss_w * (test_eval.get("cvss",0.0).fillna(0.0)/10.0) +
-        dvd_w  * test_eval.get("dvd",0.0).fillna(0.0)
-    ).clip(0.0, 0.7)
-    thr_attack_vec = np.clip(thr_base * (1.0 - risk_term), 0.03, 0.95)
+    USE_RISK_AWARE_THRESH = True  # set False for ablation
+    #Use "global_thr": thr["attack_sup_base"] for default from SUP sweep
+    # User-configurable base thresholds
+    THRESHOLDS = {
+        "cvss_weight": 0.35,
+        "epss_weight": 0.15,
+        "dvd_weight": 0.05,
+        "thr_min": 0.10,
+        "thr_max": 0.90,
+        "global_thr": thr["attack_sup_base"]
+    }
+# ============================================================
+    if USE_RISK_AWARE_THRESH:
+            # Weighted risk score
+        w_cvss = THRESHOLDS["cvss_weight"]
+        w_epss = THRESHOLDS["epss_weight"]
+        w_dvd  = THRESHOLDS["dvd_weight"]
+
+        risk_term = (
+            w_epss * test_eval.get("epss",0.0).fillna(0.0) +
+            w_cvss * (test_eval.get("cvss",0.0).fillna(0.0) / 10.0) +
+            w_dvd  * test_eval.get("dvd",0.0).fillna(0.0)
+        ).clip(0.0, 0.7)
+
+        thr_attack_vec = pd.Series(
+        np.clip(
+            THRESHOLDS["global_thr"] * (1.0 - risk_term),
+            THRESHOLDS["thr_min"],
+            THRESHOLDS["thr_max"]
+        ),
+        index=test_eval.index
+    )
+
+    else:
+        # Ablation baseline: global threshold only
+        thr_attack_vec = pd.Series(
+            THRESHOLDS["global_thr"],
+            index=test_eval.index
+        )
 
     test_eval["pred_attack_bin"] = 0
     high_risk = ((test_eval.get("epss",0.0) >= 0.60) | (test_eval.get("cvss",0.0) >= 8.0)).astype(bool)
@@ -489,6 +520,10 @@ def main():
     with open(out_meta, "w") as f: json.dump(meta, f, indent=2)
 
     print(f"Saved: {out_csv}, {out_meta}, {dash_csv}, security_posture_update.xlsx")
+    print("\nCyber (binary)")
+    print(f"Risk-aware: {USE_RISK_AWARE_THRESH} | Global_thr: {THRESHOLDS['global_thr']:.3f}")
+    print(classification_report(y_cy_true, test_eval["pred_attack_bin"].values,digits=3,zero_division=0))
+
 
 if __name__ == "__main__":
     import numpy as np

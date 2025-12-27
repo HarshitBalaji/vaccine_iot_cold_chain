@@ -135,12 +135,23 @@ if meta and isinstance(meta, dict):
 else:
     col5.metric("Threshold (sup base)", "—")
 
-# Optional AUCs from latest run (compute on the fly)
+# Compute PR-AUC and ROC-AUC once (used in KPIs + Metrics tab)
+from sklearn.metrics import precision_recall_curve, auc, roc_auc_score, roc_curve
+
+pr_auc = None
+roc_auc = None
+pr_curve = None
+roc_curve_pts = None
+
 try:
-    from sklearn.metrics import precision_recall_curve, auc, roc_auc_score
-    p, r, _ = precision_recall_curve(pred['is_cyber_true'], pred['score_attack_sup'])
+    y_true_scores = pred['is_cyber_true'].to_numpy()
+    y_score_scores = pred['score_attack_sup'].to_numpy()
+    p, r, _ = precision_recall_curve(y_true_scores, y_score_scores)
     pr_auc = auc(r, p)
-    roc_auc = roc_auc_score(pred['is_cyber_true'], pred['score_attack_sup']) if pred['is_cyber_true'].nunique()>1 else float('nan')
+    fpr, tpr, _ = roc_curve(y_true_scores, y_score_scores)
+    roc_auc = roc_auc_score(y_true_scores, y_score_scores) if np.unique(y_true_scores).size > 1 else float('nan')
+    pr_curve = (r, p)
+    roc_curve_pts = (fpr, tpr)
     st.success(f"**Cyber SUP**: PR-AUC **{pr_auc:.3f}**, ROC-AUC **{roc_auc:.3f}**")
 except Exception as e:
     st.info(f"AUCs unavailable: {e}")
@@ -161,11 +172,9 @@ T1, T2, T3, T4, T5 = st.tabs([
 # -------------- Tab 1: Time Series (aggregate) --------------
 with T1:
     st.subheader("Cyber score & flags over time (aggregate)")
-    # Option to filter timeframe and devices
     devs = sorted(pred['Device_ID'].astype(str).unique())
     sel_devs = st.multiselect("Devices", devs, default=devs[: min(10, len(devs))])
     df = pred[pred['Device_ID'].astype(str).isin(sel_devs)].copy()
-    # Aggregate by minute to avoid rendering too many points
     df_agg = (df
         .set_index('timestamp')
         .groupby('Device_ID')
@@ -179,7 +188,6 @@ with T1:
     else:
         fig = px.line(df_agg, x='timestamp', y='score_attack_sup', color='Device_ID', title='Cyber probability (mean over 5-min bins)')
         st.plotly_chart(fig, use_container_width=True)
-        # Flags scatter
         flags = df_agg[df_agg['pred_attack_bin']>0]
         if not flags.empty:
             fig2 = px.scatter(flags, x='timestamp', y='score_attack_sup', color='Device_ID', symbol='pred_attack_bin', title='Predicted cyber flags')
@@ -194,7 +202,6 @@ with T2:
     with c1:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=ddf['timestamp'], y=ddf['score_attack_sup'], name='cyber_prob', mode='lines'))
-        # predicted flags as markers
         mask = ddf['pred_attack_bin']>0
         fig.add_trace(go.Scatter(x=ddf.loc[mask,'timestamp'], y=ddf.loc[mask,'score_attack_sup'],
                                  mode='markers', name='pred_flag', marker=dict(size=8)))
@@ -222,7 +229,6 @@ with T3:
     if risk is None:
         st.info("Upload risk_dashboard_sup_riskaware.csv to see this view.")
     else:
-        # Filters
         r = risk.copy()
         r['date'] = pd.to_datetime(r['date'], errors='coerce')
         mind, maxd = r['date'].min(), r['date'].max()
@@ -233,7 +239,6 @@ with T3:
         if devs_sel:
             r = r[r['Device_ID'].astype(str).isin(devs_sel)]
         st.dataframe(r, use_container_width=True, height=350)
-        # Simple bar: days with cyber per device
         agg = r.groupby('Device_ID')['has_cyber'].sum().reset_index().rename(columns={'has_cyber':'cyber_days'})
         fig = px.bar(agg, x='Device_ID', y='cyber_days', title='Days with predicted cyber per device')
         st.plotly_chart(fig, use_container_width=True)
@@ -249,17 +254,14 @@ with T4:
         if init_df is None or final_df is None:
             st.error("Excel must contain sheets: Initial_Posture and Final_Posture_Summary")
         else:
-            # Ensure Device_ID str
             init_df['Device_ID'] = init_df['Device_ID'].astype(str)
             final_df['Device_ID'] = final_df['Device_ID'].astype(str)
-            # Merge initial + final for display
             show_cols = ['Device_ID','cvss','epss','dvd','cvss_final','epss_final','dvd_final','cyber_days','op_days','samples']
             inter = final_df[show_cols].copy()
             inter['Δcvss'] = inter['cvss_final'] - inter['cvss']
             inter['Δepss'] = inter['epss_final'] - inter['epss']
             inter['Δdvd']  = inter['dvd_final']  - inter['dvd']
             st.dataframe(inter.sort_values(['Δepss','Δdvd','Δcvss'], ascending=False), use_container_width=True, height=360)
-            # Bar charts for deltas
             st.write("**Top posture increases**")
             topk = st.slider("Top K", 5, 50, 10)
             for col, title in [("Δepss","Δ EPSS"),("Δcvss","Δ CVSS"),("Δdvd","Δ DVD")]:
@@ -291,6 +293,44 @@ with T5:
     fig = px.imshow(cm_df, text_auto=True, title="Confusion Matrix")
     st.plotly_chart(fig, use_container_width=True)
 
+    # ---- NEW: PR–AUC and ROC–AUC curves for SUP cyber ----
+    st.write("**Cyber SUP — PR and ROC curves**")
+    if pr_curve is not None and roc_curve_pts is not None and pr_auc is not None and roc_auc is not None:
+        r_vals, p_vals = pr_curve
+        fpr_vals, tpr_vals = roc_curve_pts
+
+        fig_pr = go.Figure()
+        fig_pr.add_trace(go.Scatter(x=r_vals, y=p_vals, mode="lines",
+                                    name=f"PR (AUC={pr_auc:.3f})"))
+        fig_pr.update_layout(
+            title="SUP Cyber — Precision–Recall",
+            xaxis_title="Recall",
+            yaxis_title="Precision",
+            height=380,
+            margin=dict(l=10, r=10, t=40, b=40),
+        )
+
+        fig_roc = go.Figure()
+        fig_roc.add_trace(go.Scatter(x=fpr_vals, y=tpr_vals, mode="lines",
+                                     name=f"ROC (AUC={roc_auc:.3f})"))
+        fig_roc.add_trace(go.Scatter(x=[0,1], y=[0,1], mode="lines",
+                                     name="Random", line=dict(dash="dash")))
+        fig_roc.update_layout(
+            title="SUP Cyber — ROC Curve",
+            xaxis_title="False Positive Rate",
+            yaxis_title="True Positive Rate",
+            height=380,
+            margin=dict(l=10, r=10, t=40, b=40),
+        )
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.plotly_chart(fig_pr, use_container_width=True)
+        with c2:
+            st.plotly_chart(fig_roc, use_container_width=True)
+    else:
+        st.info("PR/ROC curves could not be computed from the loaded predictions.")
+
 # ----------------------
 # Downloads
 # ----------------------
@@ -307,7 +347,6 @@ with colB:
         st.download_button("Risk Dashboard CSV", data=risk.to_csv(index=False).encode('utf-8'), file_name='risk_dashboard_sup_riskaware.csv', mime='text/csv')
 with colC:
     if posture_xlsx is not None:
-        # Rebuild Excel in-memory for download
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine='xlsxwriter') as writer:
             posture_xlsx['Initial_Posture'].to_excel(writer, index=False, sheet_name='Initial_Posture')
