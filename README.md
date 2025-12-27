@@ -47,7 +47,19 @@ python -m streamlit run Streamlit.py
 
 The Streamlit interface enables interactive visualization of anomaly scores, alerts, and risk-aware decisions.
 
-### Notes
+## Screenshots
+
+### Baseline Models Dashboard
+The Streamlit interface for baseline anomaly detection methods.
+
+![Baseline Dashboard](screenshots/baseline_dashboard.png)
+
+### Proposed Unified Model
+Interactive visualization of operational and cyber anomalies with risk-aware alerting.
+
+![Proposed Model Dashboard](screenshots/proposed_dashboard.png)
+
+## Notes
 The implementation and experimental configuration are aligned with the accompanying paper.
 
 Additional experimental details, ablation studies, and extended results are intended to support reproducibility.
